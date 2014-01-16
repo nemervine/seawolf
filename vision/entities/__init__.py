@@ -14,6 +14,7 @@ from test import TestEntity
 from gate import GateEntity, GATE_BLACK, GATE_WHITE
 from binoculartest import BinocularTest
 from path import PathEntity
+from path_two import PathTwoEntity
 from buoy import BuoyEntity
 from buoytest import BuoyTestEntity
 from buoynew import BuoyNewEntity
@@ -29,6 +30,8 @@ from binshough import BinsHoughEntity
 from binshough2 import BinsHough2Entity
 from pizza import PizzaEntity
 from pizzacorner import PizzaCornerEntity
+from double_test import DoubleTestEntity
+from paths_2 import PathsEntity
 
 entity_classes = {
     "test": TestEntity,
@@ -36,6 +39,7 @@ entity_classes = {
     "binocularbuoy": BinocularBuoy,
     "gate": GateEntity,
     "path": PathEntity,
+    "path2" : PathTwoEntity,
     "buoy": BuoyEntity,
     "buoynew": BuoyNewEntity,
     "buoytest": BuoyTestEntity,
@@ -49,6 +53,8 @@ entity_classes = {
     "binshough2": BinsHough2Entity,
     "doublepath2": DoublePath2Entity,
     "pizza": PizzaEntity,
-    "pizzacorner": PizzaCornerEntity
+    "pizzacorner": PizzaCornerEntity,
+    "doubletest": DoubleTestEntity,
+    "paths": PathsEntity
 }
 
