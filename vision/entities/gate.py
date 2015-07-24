@@ -3,6 +3,9 @@ from __future__ import division
 import math
 
 import cv
+import cv2
+
+import numpy as np
 
 import svr
 
@@ -42,8 +45,13 @@ class GateEntity(VisionEntity):
         self.vertical_threshold = .26  # How close to vertical lines must be
         self.horizontal_threshold = 0.2  # How close to horizontal lines must be
         self.hough_threshold = 30
-        self.adaptive_thresh_blocksize = 19
-        self.adaptive_thresh = 1
+        self.adaptive_thresh_blocksize = 35
+
+        self.adaptive_thresh_low = 65
+        self.adaptive_thresh_high = 300
+
+
+
         self.max_range = 300
 
         self.left_pole = None
@@ -81,19 +89,45 @@ class GateEntity(VisionEntity):
 
         # Set binary image to have saturation channel
         hsv = cv.CreateImage(cv.GetSize(frame), 8, 3)
+        hsv_original = cv.CreateImage(cv.GetSize(frame), 8, 3)
         binary = cv.CreateImage(cv.GetSize(frame), 8, 1)
-        cv.CvtColor(frame, hsv, cv.CV_BGR2HSV)
+
+
+        hue_lower = cv.CreateImage(cv.GetSize(frame), 8, 1)
+        hue_higher = cv.CreateImage(cv.GetSize(frame), 8, 1)
+
+        cv.CvtColor(frame, hsv_original, cv.CV_BGR2HSV)
+        cv.Copy(hsv_original, hsv)
         cv.SetImageCOI(hsv, 1)
         cv.Copy(hsv, binary)
         cv.SetImageCOI(hsv, 0)
 
-        cv.AdaptiveThreshold(binary, binary,
-            255,
-            cv.CV_ADAPTIVE_THRESH_MEAN_C,
-            cv.CV_THRESH_BINARY_INV,
-            self.adaptive_thresh_blocksize,
-            self.adaptive_thresh,
-        )
+        cv.Not(hue_lower, hue_lower)
+
+
+        ORANGE_MIN1 = np.array([0, 0, 0],np.uint8)
+        ORANGE_MAX1 = np.array([75, 255, 255],np.uint8)        
+
+
+        ORANGE_MIN2 = np.array([80, 0, 0],np.uint8)
+        ORANGE_MAX2 = np.array([180, 255, 255],np.uint8) 
+
+        hsv_cv2a = libvision.cv_to_cv2(hsv_original)
+        hsv_cv2b = libvision.cv_to_cv2(hsv_original)
+        hsv_ranged1 = cv2.inRange(hsv_cv2a, ORANGE_MIN1, ORANGE_MAX1)
+
+
+        hsv_ranged2 = cv2.inRange(hsv_cv2b, ORANGE_MIN2, ORANGE_MAX2)
+
+        cv2.bitwise_not(hsv_ranged2, hsv_ranged2)
+
+        output = hsv_ranged2
+
+        output = cv2.bitwise_or(hsv_ranged1, hsv_ranged2)
+
+         
+        binary = libvision.cv2_to_cv(output)
+
 
         # Morphology
         kernel = cv.CreateStructuringElementEx(5, 5, 3, 3, cv.CV_SHAPE_ELLIPSE)
