@@ -109,8 +109,8 @@ class GateEntity(VisionEntity):
         ORANGE_MAX1 = np.array([75, 255, 255],np.uint8)        
 
 
-        ORANGE_MIN2 = np.array([80, 0, 0],np.uint8)
-        ORANGE_MAX2 = np.array([180, 255, 255],np.uint8) 
+        ORANGE_MIN2 = np.array([75, 0, 0],np.uint8)
+        ORANGE_MAX2 = np.array([300, 255, 255],np.uint8) 
 
         hsv_cv2a = libvision.cv_to_cv2(hsv_original)
         hsv_cv2b = libvision.cv_to_cv2(hsv_original)
@@ -119,14 +119,14 @@ class GateEntity(VisionEntity):
 
         hsv_ranged2 = cv2.inRange(hsv_cv2b, ORANGE_MIN2, ORANGE_MAX2)
 
-        cv2.bitwise_not(hsv_ranged2, hsv_ranged2)
+        #cv2.bitwise_not(hsv_ranged2, hsv_ranged2)
 
         output = hsv_ranged2
 
         output = cv2.bitwise_or(hsv_ranged1, hsv_ranged2)
 
          
-        binary = libvision.cv2_to_cv(output)
+        binary = libvision.cv2_to_cv(hsv_ranged1)
 
 
         # Morphology
