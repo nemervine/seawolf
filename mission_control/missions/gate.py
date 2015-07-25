@@ -5,6 +5,7 @@ from vision import entities
 from missions.base import MissionBase
 import sw3, time
 
+STARTING_MISSION_TIMEOUT = 9
 MISSION_TIMEOUT = 5
 DEGREE_PER_PIXEL = 0.10
 STRAIGHT_TOLERANCE = 3  # In degrees
@@ -28,6 +29,8 @@ class GateMission(MissionBase):
             sw3.HoldYaw(),
             sw3.Forward(FORWARD_SPEED),
         ))
+
+        self.set_entity_timeout(STARTING_MISSION_TIMEOUT)
 
     def step(self, vision_data):
         if not vision_data:
