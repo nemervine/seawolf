@@ -144,6 +144,7 @@ int main(void) {
         [PT_DEPTH] = "./bin/depth",
         [PT_PERIPHERAL] = "./bin/peripheral",
     };
+    int pt_active_flg[PT_PERIPHERAL] = {0};
 
     /* Find serial ports */
     glob("/dev/ttyUSB*", 0, NULL, &globbuff);
@@ -166,20 +167,40 @@ int main(void) {
         } else {
             Logging_log(INFO, Util_format("Identified device on %s. Spawning %s", port_path, drivers[pt]));
 
+            /* raise a flag indicating the peripheral is in service */
+            pt_active_flg[pt] = 1;
+            
             /* Fork and execute subprocess in child */
             if(fork() == 0) {
+                pt_active_flg[pt] = 0; //undo raising of status flag
+                
                 execl(drivers[pt], drivers[pt], port_path, NULL);
                 fprintf(stderr, "Unable to spawn application (%s)\n", drivers[pt]);
                 _exit(1);
             }
+            
+            
+            
         }
     }
+    
+    /* notify user about which peripherals didn't connect */
+    Logging_log(INFO, Util_format("Here is the known status of our peripherals:"));
+    for(int i=1; i < PT_PERIPHERAL+1; i++) {
+        printf("  * %-20s = ",drivers[i]);
+        
+        if (pt_active_flg[i] == 1) {
+            printf("ONLINE\n");
+        } else {
+            printf("OFFLINE\n");
+        }
+    }
+    printf("\n");
 
     /* Send notification of completion */
     Notify_send("COMPLETED", "Serial identification");
 
     while(true) {
-	printf("sleeping...\n");
         Util_usleep(5.0);
     }
 
