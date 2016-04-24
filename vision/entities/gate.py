@@ -194,12 +194,23 @@ class GateEntity(VisionEntity):
         print vertical_lines
         self.returning = 0
         self.found = False
-        if len(vertical_lines) is 2:
+        if len(vertical_lines) == 2:
+            # Assign leftmost pole to left_pole and rightmost pole to right_pole
+            self.left_pole = round(min(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
+            self.right_pole = round(max(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
+        elseif (len(vertical_lines == 1):
+            # Assign single line to most likely pole and assume the other is at the edge
+            pole = round(vertical_lines[0][0], 2) - width/2
+            if pole < 0:
+                self.left_pole = pole
+                self.right_pole = width/2
+            else:
+                self.right_pole = pole
+                self.left_pole = -width/2
+        if left_pole != None and right_pole != None:
             roi = cv.GetImageROI(frame)
             width = roi[2]
             height = roi[3]
-            self.left_pole = round(min(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
-            self.right_pole = round(max(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
 
             self.returning = (self.left_pole + self.right_pole)/2
 	    print "Returning ", self.returning
