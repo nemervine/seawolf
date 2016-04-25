@@ -198,7 +198,7 @@ class GateEntity(VisionEntity):
             # Assign leftmost pole to left_pole and rightmost pole to right_pole
             self.left_pole = round(min(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
             self.right_pole = round(max(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
-        elseif (len(vertical_lines == 1):
+        elif len(vertical_lines == 1):
             # Assign single line to most likely pole and assume the other is at the edge
             pole = round(vertical_lines[0][0], 2) - width/2
             if pole < 0:
