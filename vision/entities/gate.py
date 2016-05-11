@@ -70,6 +70,8 @@ class GateEntity(VisionEntity):
             #self.create_trackbar("hough_threshold", 100)
 
     def process_frame(self, frame):
+        (width,heigh) = cv.GetSize(frame)
+
         #create locations for the a pair of test frames
         frametest = cv.CreateImage(cv.GetSize(frame), 8, 3)
         binarytest = cv.CreateImage(cv.GetSize(frame), 8, 1)
@@ -215,13 +217,32 @@ class GateEntity(VisionEntity):
         #print vertical_lines
         self.returning = 0
         self.found = False
+    
+        #if two lines are detected, define locations of left/right pole
+        if len(vertical_lines) == 2:
+            # Assign leftmost pole to left_pole and rightmost pole to right_pole
+            self.left_pole = round(min(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
+            self.right_pole = round(max(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
+        
+        #if only one line detected, clip the other one off screen somewhere
+        elif len(vertical_lines) == 1:
+            # Assign single line to most likely pole and assume the other is at the edge
+            pole = round(vertical_lines[0][0], 2) - width/2
 
-        if len(vertical_lines) is 2:
+            #is on right side of screen, gate center must be on right
+            if pole < 0:
+                self.left_pole = pole
+                self.right_pole = width/2
+            #else gate center is on left side
+            else:
+                self.right_pole = pole
+                self.left_pole = -width/2
+
+        #if left and right poles are both known, increment some counters
+        if self.left_pole != None and self.right_pole != None:
             roi = cv.GetImageROI(frame)
             width = roi[2]
             height = roi[3]
-            self.left_pole = round(min(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
-            self.right_pole = round(max(vertical_lines[0][0], vertical_lines[1][0]), 2) - width/2
 
             self.returning = (self.left_pole + self.right_pole)/2
             logging.info("Returning {} as gate center delta.".format(self.returning))
@@ -248,6 +269,8 @@ class GateEntity(VisionEntity):
             else: 
                 print "FOUND CENTER AND RETURNED IT"
                 self.found = True
+
+        #reset counters if gate ever gets lost
         else:
             self.returning = 0
             if self.last_seen < 0:
