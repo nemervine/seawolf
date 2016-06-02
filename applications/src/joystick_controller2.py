@@ -106,8 +106,9 @@ def update_Raxis(event):
     strafe = strafe_stk * MAX_STRAFE_RATE
     
     #Send commands to Seawolf
-    sw.notify.send("THRUSTER_REQUEST", "Strafe %.4f" % (strafe))
+    sw.notify.send("THRUSTER_REQUEST", "Roll %.4f" % (strafe))
     sw.notify.send("THRUSTER_REQUEST", "Pitch %.4f" % (pitch))
+    print("Pitch=%.4f" % pitch)
 
 
 

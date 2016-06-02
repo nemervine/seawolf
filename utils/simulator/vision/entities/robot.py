@@ -1,11 +1,13 @@
 
 from __future__ import division
 from math import radians, degrees, sin, cos, pi, atan2, tan
-import numpy
+import numpy as np
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
+#from utils import matrix44, vector3
+import math
 
 import seawolf
 
@@ -13,6 +15,87 @@ from base import Entity
 from doublepath import DoublePathEntity
 import model
 
+"""
+def mix_rotate(ent, prev_rot, add_frc, sub_frc, var_name):
+    new_rot = prev_rot + (add_frc-sub_frc) * 
+    yaw = yaw + (port - star) * self.YAW_CONSTANT * dt
+    yaw = (yaw + 180) % 360 - 180  # Range -180 to 180
+    seawolf.var.set("SEA.Yaw", yaw)
+    seawolf.notify.send("UPDATED", "IMU")
+"""
+
+def rotation_matrix(axis, theta):
+    """
+    Return the rotation matrix associated with counterclockwise rotation about
+    the given axis by theta radians.
+    """
+    axis = np.asarray(axis)
+    theta = np.asarray(theta)
+    axis = axis/math.sqrt(np.dot(axis, axis))
+    a = math.cos(theta/2.0)
+    b, c, d = -axis*math.sin(theta/2.0)
+    aa, bb, cc, dd = a*a, b*b, c*c, d*d
+    bc, ad, ac, ab, bd, cd = b*c, a*d, a*c, a*b, b*d, c*d
+    return np.array([[aa+bb-cc-dd, 2*(bc+ad), 2*(bd-ac)],
+                     [2*(bc-ad), aa+cc-bb-dd, 2*(cd+ab)],
+                     [2*(bd+ac), 2*(cd-ab), aa+dd-bb-cc]])
+
+def get_rpy_rotation_matrix(norm_x, norm_y, roll, pitch, yaw):
+    # definitions
+    local_z_axis = np.cross(norm_x,norm_y)
+    print("local z = %s" % local_z_axis)
+    y_axis = [0,1,0]
+    x_axis = [1,0,0]
+    # rotation vectors
+    roll *= math.pi/180.0
+    pitch *= math.pi/180.0
+    yaw *= math.pi/180.0
+    print("")
+    print("Roll %.2f, Pitch %.2f, Yaw %.2f input" % (roll,pitch,yaw) )
+    
+    # heading
+    heading = np.array(norm_x).transpose()
+    print("Defaut heading %s" % heading)
+    
+    # GET RZ
+    rz = rotation_matrix(local_z_axis, yaw)
+    print("yaw rotation mat applied to heading %s" % rz)
+    
+    # [heading] * [r_local_z]
+    heading = heading.dot(rz)
+    print ("heading after yaw = %s" % heading)
+    
+    # [heading] * [old r_local_z] * [new r_local_y]
+    local_y_axis = np.cross(local_z_axis,heading)
+    ry = rotation_matrix( local_y_axis , pitch)
+    heading = heading.dot(ry)
+    print ("heading after pitch = %s" % heading)
+    
+    # [heading] * [old r_local_z] * [old l_local_y] * [new r_local_x]
+    local_x_axis = heading
+    rx = rotation_matrix( local_x_axis, roll )
+    heading = heading.dot(rx)
+    print ("heading after roll = %s" % heading)
+    
+    
+    # multiply
+    prod1 = rz.dot(ry)
+    final_rotation = prod1.dot(rx)
+    
+    return final_rotation
+    
+    
+def rotation_2_euler(rot_mat):
+    r11, r12, r13 = rot_mat[0,:]
+    r21, r22, r23 = rot_mat[1,:]
+    r31, r32, r33 = rot_mat[2,:]
+    
+    eulerZ = math.atan2(r21,r11)    * 180/np.pi
+    eulerY = math.atan2(-r31, math.sqrt(r32**2 + r33**2))   * 180/np.pi
+    eulerX = math.atan2(r32, r33)   * 180/np.pi
+    
+    return (eulerX, eulerY, eulerZ)
+    
 
 class RobotEntity(Entity):
 
@@ -37,6 +120,18 @@ class RobotEntity(Entity):
         seawolf.var.subscribe("Stern")
         seawolf.var.subscribe("StrafeT")
         seawolf.var.subscribe("StrafeB")
+        seawolf.var.subscribe("SEA.Roll")
+        seawolf.var.subscribe("SEA.Pitch")
+        seawolf.var.subscribe("SEA.Yaw")
+        
+        self.normal_x = np.array([1,0,0])
+        self.normal_y = np.array([0,1,0])
+        
+        #self.rot_delta = vector3.Vector3()
+        #self.trans_delta = vector3.Vector3()
+        
+        #self.rotation = matrix44.Matrix44()
+        #self.translation = matrix44.Matrix44()
 
     def get_var(self, name):
         if seawolf.var.stale(name) or name not in self.tracked_vars:
@@ -46,7 +141,27 @@ class RobotEntity(Entity):
         else:
             return self.tracked_vars[name]
 
+    def set_rotation(self, velocity_roll, velocity_pitch, velocity_yaw):
+        normals = ()
+        Rotation_Mat_dt = get_rpy_rotation_matrix( self.normal_x, self.normal_y, 
+                                              velocity_roll, velocity_pitch, velocity_yaw)
+                                              
+        # gener
+        (Rx, Ry, Rz) = rotation_2_euler( Rotation_Mat_dt )
+        
+        # save new normal values
+        
+        self.normal_x = self.normal_x.dot(Rotation_Mat_dt)
+        self.normal_y = self.normal_y.dot(Rotation_Mat_dt)
+        self.roll += Rx
+        self.pitch += -Ry
+        self.yaw += Rz
+    
     def step(self, dt):
+    
+        # Capture robot's current position and rotation
+        #self.translation.set(self.pos[0], self.pos[1] , self.pos[2], 1.0)
+        #self.rotation.set(self.roll, -self.pitch, -self.yaw, 0.0)
 
         # Thrusters
         port = self.get_var("Port")
@@ -56,13 +171,59 @@ class RobotEntity(Entity):
         strafeT = self.get_var("StrafeT")
         strafeB = self.get_var("StrafeB")
         
-        # Velocity
-        velocity_fw     = (port + star) * self.VELOCITY_CONSTANT
-        velocity_stf    = (strafeT - strafeB) * self.VELOCITY_CONSTANT
-        velocity_dph    = (bow + stern) * self.DEPTH_CONSTANT
+        # Orthongonal Velocity
+        velocity_fw     = (port + star) * self.VELOCITY_CONSTANT * dt
+        velocity_stf    = (strafeT - strafeB) * self.VELOCITY_CONSTANT * dt
+        velocity_dph    = (bow + stern) * self.DEPTH_CONSTANT * dt
+        
+        # Angular Velocity
+        velocity_yaw = (port - star) * self.YAW_CONSTANT * dt
+        velocity_pitch = (stern - bow) * self.YAW_CONSTANT * dt
+        velocity_roll = (strafeT + strafeB) * self.YAW_CONSTANT * dt
+        
+        """
+        yaw = (yaw + 180) % 360 - 180  # Range -180 to 180
+        seawolf.var.set("SEA.Yaw", yaw)
+        seawolf.notify.send("UPDATED", "IMU")
+        """
+        """
+        # apply to vectors
+        self.trans_delta.set(velocity_fw, 
+                            -velocity_stf, 
+                            -velocity_dph)
+                            
+        self.rot_delta.set(velocity_roll,
+                            -velocity_pitch,
+                            -velocity_yaw)
+                            
+        # apply transformations
+        self.translation.translate()
+        """
+        
+        # show forward unit vect
+        # generate rotation matrix for yaw
+          # have rotation matrix for new forward direction
+        # generate rotation matrix for pitch
+          # have a rotation I can mult with new forward direction to show new downward heading
+        # generate a z unit vector.
+        # apply yaw and yawed-pitch rotations to the z unit vector
+          # have a 
+          
+        # mult ti
+        # multiply fuv with yaw angle
+        # multiply fuv with pitch angle
+        
+        # reflect that you not have a vector for
+        
+        self.set_rotation(velocity_roll, velocity_pitch, velocity_yaw)
+        
+        
         
         # IMU
-        pitch = -self.pitch #IMU convention: pitch --- Simulator convention: self.pitch
+        yaw = -self.yaw
+        pitch = self.pitch #IMU convention: pitch --- Simulator convention: self.pitch
+        
+        
 
         # Depth
         self.depth      = -self.pos[2]
@@ -73,23 +234,37 @@ class RobotEntity(Entity):
         seawolf.var.set("Depth", self.depth)
 
         # Position
-        self.pos[0] += dt * (cos(radians(-self.yaw)) * sin(radians(pitch + 90)) * velocity_fw 
-                           + sin(radians(-self.yaw)) * sin(radians(self.roll  + 90)) * velocity_stf
-                           + cos(radians(-self.yaw)) * sin(radians(pitch))      * velocity_dph)
+        self.pos[0] += dt * (cos(radians(-self.yaw)) * sin(radians(pitch + 90)) * velocity_fw)
+                           #+ sin(radians(-self.yaw)) * sin(radians(self.roll  + 90)) * velocity_stf
+                           #+ cos(radians(-self.yaw)) * sin(radians(pitch))      * velocity_dph)
                            
-        self.pos[1] += dt * (sin(radians(-self.yaw)) * sin(radians(pitch + 90)) * velocity_fw
-                           + -cos(radians(-self.yaw)) * sin(radians(self.roll  + 90)) * velocity_stf
-                           + sin(radians(-self.yaw)) * sin(radians(pitch))      * velocity_dph)
+        self.pos[1] += dt * (sin(radians(-self.yaw)) * sin(radians(pitch + 90)) * velocity_fw)
+                           #+ -cos(radians(-self.yaw)) * sin(radians(self.roll  + 90)) * velocity_stf
+                           #+ sin(radians(-self.yaw)) * sin(radians(pitch))      * velocity_dph)
 
 
         # Yaw
-        self.yaw = self.yaw + (port - star) * self.YAW_CONSTANT * dt
-        self.yaw = (self.yaw + 180) % 360 - 180  # Range -180 to 180
-        seawolf.var.set("SEA.Yaw", self.yaw)
+        
+        
+        # transformations
+        #self.yaw = -yaw
+        
+        """
+        # Pitch
+        pitch = pitch + (stern - bow) * self.YAW_CONSTANT * dt
+        pitch = (pitch + 180) % 360 - 180  # Range -180 to 180
+        seawolf.var.set("SEA.Pitch", pitch)
+        self.pitch = -pitch
         seawolf.notify.send("UPDATED", "IMU")
         
-        # Pitch
+        # Roll
+        self.roll = self.roll + (strafeT + strafeB) * self.YAW_CONSTANT * dt
+        self.roll = (self.roll + 180) % 360 - 180  # Range -180 to 180
+        seawolf.var.set("SEA.Roll", self.roll)
+        seawolf.notify.send("UPDATED", "IMU")
+        """
 
+        
     def draw(self):
         self.pre_draw()
 
@@ -207,18 +382,18 @@ class RobotEntity(Entity):
         # Convert to homogeneous coordinates (column matrix)
         if len(point) == 3:
             dimmensions = 3
-            point = numpy.matrix([point[0], point[1], point[2], 1]).transpose()
+            point = np.matrix([point[0], point[1], point[2], 1]).transpose()
         elif len(point) == 2:
             dimmensions = 2
-            point = numpy.matrix([point[0], point[1], 0, 1]).transpose()
+            point = np.matrix([point[0], point[1], 0, 1]).transpose()
         else:
             raise ValueError("point must be length 2 or 3.")
 
         camera_transform = self.get_camera_matrix(camera)
-        new_point = numpy.dot(camera_transform, point)
+        new_point = np.dot(camera_transform, point)
 
         # Convert from a column matrix to array
-        new_point = numpy.array(new_point.transpose())[0]
+        new_point = np.array(new_point.transpose())[0]
 
         # OpenGL camera is at the origin pointing down the -Z axis.  Using
         # arctargent we can get the spherical angles of the point.
