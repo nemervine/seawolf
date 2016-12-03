@@ -42,7 +42,7 @@ def main():
 
     pwm = seawolf.var.get("PumpPWM")
     pulses = seawolf.var.get("FlowPulses")
-	paused = seawolf.var.get("PulsePID.Paused")
+    paused = seawolf.var.get("PulsePID.Paused")
 
     pid = seawolf.PID( seawolf.var.get("PulsePID.Heading"), seawolf.var.get("PulsePID.p"), seawolf.var.get("PulsePID.i"), seawolf.var.get("PulsePID.d"))
 
@@ -63,7 +63,7 @@ def main():
         if(seawolf.var.stale("PumpPWM")):
             pwm = seawolf.var.get("PumpPWM")
         
-		if(seawolf.var.stale("FlowPulses")):
+        if(seawolf.var.stale("FlowPulses")):
             pulses = seawolf.var.get("FlowPulses")
 			
         if(seawolf.var.stale("PulsePID.p") or seawolf.var.stale("PulsePID.i") or seawolf.var.stale("PulsePID.d")):

@@ -18,7 +18,7 @@ typedef enum{
     PT_PERIPHERAL = 4,
     PT_PNEUMATICS = 5,
     PT_IMUSPARK = 6,
-	PT_FLOWSENSOR = 7,
+    PT_FLOWSENSOR = 7,
 } PeripheralType;
 
 /* Cycle the DTR line on the given serial port */
@@ -298,7 +298,7 @@ int main(void) {
         [PT_PERIPHERAL] = "./bin/peripheral",
         [PT_PNEUMATICS] = "./bin/pneumatics",
         [PT_IMUSPARK] = "./bin/imuspark",
-		[PT_FLOWSENSOR] = "./bin/flowsensor"
+	[PT_FLOWSENSOR] = "./bin/flowsensor"
     };
 
     /* Find serial ports */

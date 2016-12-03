@@ -7,7 +7,7 @@ screen -dr seawolf -p 0 -X title hub
 sleep 0.5
 screen -dr seawolf -p hub -X stuff "cd db
 "
-screen -dr seawolf -p hub -X stuff "seawolf-hub -c ../conf/hub.conf
+screen -dr seawolf -p hub -X stuff "seawolf-hub -c ../conf/local-hub.conf
 "
 
 # serialapp
