@@ -70,16 +70,6 @@ seawolf.var.subscribe("RollPID.Heading")
 seawolf.var.subscribe("RollPID.Paused")
 seawolf.var.subscribe("SEA.Roll")
 
-#Pulse
-seawolf.var.subscribe("PulsePID.p")
-seawolf.var.subscribe("PulsePID.i")
-seawolf.var.subscribe("PulsePID.d")
-seawolf.var.subscribe("PulsePID.Heading")
-seawolf.var.subscribe("PulsePID.Paused")
-seawolf.var.subscribe("PumpPWM")
-seawolf.var.subscribe("FlowPulses")
-
-
 CELL_X = 12
 CELL_Y = 1
 FIRST_LINE = 1
@@ -89,9 +79,9 @@ class GUI:
     def __init__(self,pid, stdscr):
         self.pid = pid
         self.stdscr = stdscr
-        self.PID_choice = ['Depth','Roll','Pitch','Yaw','Pulse']
+        self.PID_choice = ['Depth','Roll','Pitch','Yaw']
         self.PID_param = ['p','i','d']
-        self.PID_group = [('w','s','x'), ('e','d','c'), ('r','f','v'),('t','g','b'),('o','k','m')]
+        self.PID_group = [('w','s','x'), ('e','d','c'), ('r','f','v'),('t','g','b')]
         self.matrix = self.populate_matrix()
 
         self.incr = [0.1, 0.01]

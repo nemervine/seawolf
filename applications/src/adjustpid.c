@@ -3,7 +3,7 @@
 
 int main(int argc, char** argv) {
     if(!(argc == 3 || argc == 4)) {
-        printf("Usage: %s <depth|pitch|roll|yaw|pulse> <p|i|d> [<value>]\n", argv[0]);
+        printf("Usage: %s <depth|pitch|roll|yaw> <p|i|d> [<value>]\n", argv[0]);
         exit(0);
     }
 
@@ -109,27 +109,6 @@ int main(int argc, char** argv) {
             }
         }
         Notify_send("UPDATED", "RollPID.Coefficients");
-    } else if(strcmp(sensor, "pulse") == 0) {
-        if(var == 'p') {
-            if(action == SET) {
-                Var_set("PulsePID.p", value);
-            } else {
-                printf("%.2f\n", Var_get("PulsePID.p"));
-            }
-        } else if(var == 'i') {
-            if(action == SET) {
-                Var_set("PulsePID.i", value);
-            } else {
-                printf("%.2f\n", Var_get("PulsePID.i"));
-            }
-        } else if(var == 'd') {
-            if(action == SET) {
-                Var_set("PulsePID.d", value);
-            } else {
-                printf("%.2f\n", Var_get("PulsePID.d"));
-            }
-        }
-        Notify_send("UPDATED", "PulsePID.Coefficients");
     } else {
         printf("Invalid arguments\n");
     }

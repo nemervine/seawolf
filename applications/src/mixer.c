@@ -11,7 +11,6 @@
 #define STERN   3
 #define STRAFET 4
 #define STRAFEB 5
-#define	PULSE	6
 
 /* Trim port/star values to compensate for rotation from strafing */
 #define STRAFE_TRIM 0.3
@@ -47,7 +46,7 @@ static void trim(float* outa, float* outb, float process_variable, float trim_va
 }
 
 /* Simple summing mixing algorithm */
-static void mix(float req_pitch, float req_depth, float req_forward, float req_yaw, float req_strafe, float req_roll, float req_pulse, float out[7]) {
+static void mix(float req_pitch, float req_depth, float req_forward, float req_yaw, float req_strafe, float req_roll, float out[6]) {
     /* 
     direction and       vectorized commands that typically come from
     magnitude of        sw3.routines.py. See high-level navigation
@@ -60,7 +59,6 @@ static void mix(float req_pitch, float req_depth, float req_forward, float req_y
     out[STAR] = req_forward - req_yaw;
     out[STRAFET] = req_strafe + req_roll;
     out[STRAFEB] = -req_strafe + req_roll;
-	out[PULSE] =  req_pulse;
 
     /* Trim port/starboad thrusters */
     //if(req_forward != 0) {
@@ -84,8 +82,8 @@ static void mix(float req_pitch, float req_depth, float req_forward, float req_y
     trim(&out[STERN], &out[BOW], req_depth, PITCH_TRIM);
 }
 
-static void setThrusters(float out[7]) {
-    static float old_out[] = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0};
+static void setThrusters(float out[6]) {
+    static float old_out[] = {2.0, 2.0, 2.0, 2.0, 2.0, 2.0};
 
     /* Set all thurster values */
     if(fabs(old_out[BOW] - out[BOW]) > UPDATE_TOLERANCE) {
@@ -117,11 +115,6 @@ static void setThrusters(float out[7]) {
         old_out[STRAFEB] = out[STRAFEB];
         Var_set("StrafeB", out[STRAFEB]);
     }
-	
-	if(fabs(old_out[PULSE] - out[PULSE]) > UPDATE_TOLERANCE) {
-        old_out[PULSE] = out[PULSE];
-        Var_set("PumpPWM", out[PULSE]);
-    }
 }
 
 static int count;
@@ -144,7 +137,7 @@ int main(void) {
     Seawolf_init("PID Mixer");
 
     /* Thruster values */
-    float out[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    float out[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     /* Value requests from PID's */
     float req_strafe  = 0.0;
@@ -153,7 +146,6 @@ int main(void) {
     float req_depth   = 0.0;
     float req_forward = 0.0;
     float req_yaw     = 0.0;
-	float req_pulse   = 0.0;
 
     /* Notify buffers */
     char requester[16], value[16];
@@ -187,14 +179,12 @@ int main(void) {
             req_strafe = atof(value);
         } else if(strcmp(requester, "Roll") == 0) {
             req_roll = atof(value);
-        } else if(strcmp(requester, "PumpPWM") == 0) {
-            req_pulse = atof(value);
         } else {
             continue;
         }
 
         /* Mix */
-        mix(req_pitch, req_depth, req_forward, req_yaw, req_strafe, req_roll, req_pulse, out);
+        mix(req_pitch, req_depth, req_forward, req_yaw, req_strafe, req_roll, out);
 
         /* Check bounds on all output values */
         out[BOW]    = Util_inRange(-1, out[BOW], 1);
@@ -203,7 +193,6 @@ int main(void) {
         out[STAR]   = Util_inRange(-1, out[STAR], 1);
         out[STRAFET] = Util_inRange(-1, out[STRAFET], 1);
         out[STRAFEB] = Util_inRange(-1, out[STRAFEB], 1);
-		out[PULSE] = Util_inRange(0, out[PULSE], 255);
 
         /* Output new thruster values */
         setThrusters(out);

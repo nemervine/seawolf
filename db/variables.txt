@@ -51,11 +51,3 @@ Solenoid.1           = 0.0,  0,  0
 Solenoid.2           = 0.0,  0,  0
 Servo.0              = 0.0,  0,  0
 Servo.1              = 0.0,  0,  0
-
-PulsePID.Heading     = 0.0,  0,  0
-PulsePID.Paused      = 1.0,  0,  0
-PulsePID.d           = 0.0,  1,  0
-PulsePID.i           = 0.0,  1,  0
-PulsePID.p           = 0.0,  1,  0
-FlowPulses           = 0.0,  0,  0
-PumpPWM              = 0.0,  0,  0

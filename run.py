@@ -79,7 +79,6 @@ class AppRunnerFrame(wx.Frame):
                 "Roll PID": AppPanel(self.panel_right, ["./bin/rollpidpy"], "applications/"),
                 "Pitch PID": AppPanel(self.panel_right, ["./bin/pitchpidpy"], "applications/"),
                 "Yaw PID": AppPanel(self.panel_right, ["./bin/yawpidpy"], "applications/"),
-				"Pulse PID": AppPanel(self.panel_right, ["./bin/pulsepidpy"], "applications/"),
                 "Mixer": AppPanel(self.panel_right, ["./bin/mixer"], "applications/"),
             },
             "Control": {
