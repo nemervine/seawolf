@@ -18,6 +18,7 @@ typedef enum{
     PT_PERIPHERAL = 4,
     PT_PNEUMATICS = 5,
     PT_IMUSPARK = 6,
+	PT_FLOWSENSOR = 7,
 } PeripheralType;
 
 /* Cycle the DTR line on the given serial port */
@@ -202,6 +203,39 @@ static int handshake_pneumatics(SerialPort sp) {
     return false;
 }
 
+static int handshake_flowsensor(SerialPort sp) {
+    // set baud rate
+    Serial_setBaud(sp, 19200);
+
+    // setup variables
+    int n = 0;
+    char ret_string[128];
+
+    /* Poke flowsensor with predefined command */
+    n = Serial_sendByte(sp, 0xFE);
+    if(n == -1) {
+        Logging_log(ERROR, "Unable to send data");
+        return -1;
+    }
+
+    //give a little time for arduino to respond
+    Util_usleep(.1);
+
+    //if any response has been obtained, check if {ID|PNEUMATICS}\r\n
+    n = Serial_available(sp);
+    if ((n > 0) && (n < 128)) {
+        Serial_get(sp,ret_string,n);
+        if (strncmp(ret_string, "{ID|Flowsensor}\r\n",n)==0) {
+            /* Received Flowsensor response */
+            Logging_log(DEBUG, "FLOWSENSOR Found");
+            Serial_flush(sp);
+            return true;
+        }
+    }
+
+    return false;
+}
+
 static int getPeripheralType(SerialPort sp) {
     //printf("going\n");
     //char id[32];
@@ -229,12 +263,15 @@ static int getPeripheralType(SerialPort sp) {
     } else if (results==-1) {
         return -1;
     }
-
-    
-    
+     
     /* attempt Pneumatics */
     if (handshake_pneumatics(sp)==true){
         return PT_PNEUMATICS;
+    }
+	
+	/* attempt Flow Sensor */
+    if (handshake_flowsensor(sp)==true){
+        return PT_FLOWSENSOR;
     }
 
     // if none of these succeed, there's probably nothing there.
@@ -261,6 +298,7 @@ int main(void) {
         [PT_PERIPHERAL] = "./bin/peripheral",
         [PT_PNEUMATICS] = "./bin/pneumatics",
         [PT_IMUSPARK] = "./bin/imuspark",
+		[PT_FLOWSENSOR] = "./bin/flowsensor"
     };
 
     /* Find serial ports */
